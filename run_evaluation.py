@@ -21,6 +21,7 @@ which metrics to evaluate and which methods to use.
 import os
 import sys
 from typing import Optional
+from pathlib import Path
 
 # Add current directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -38,6 +39,13 @@ except ImportError:
 from evaluators import LLMEvaluator, MockLLMEvaluator
 from core import EvaluationPipeline
 from parsers import ConfigLoader
+
+
+def ensure_reports_dir() -> Path:
+    """Ensure the reports directory exists and return its path"""
+    reports_dir = Path(__file__).parent / "reports"
+    reports_dir.mkdir(exist_ok=True)
+    return reports_dir
 
 
 def run_from_recorded(
@@ -122,13 +130,16 @@ def run_from_recorded(
     
     # Generate report
     print("\nGenerating report...")
-    report_filename = f"evaluation_from_recorded_turn{target_turn}.txt" if target_turn else "evaluation_from_recorded.txt"
-    report = pipeline.generate_report(report_filename)
+    reports_dir = ensure_reports_dir()
+    report_filename = reports_dir / (f"evaluation_from_recorded_turn{target_turn}.txt" if target_turn else "evaluation_from_recorded.txt")
+    report = pipeline.generate_report(str(report_filename))
     print("\n" + report)
+    print(f"Report saved to: {report_filename}")
     
     # Export JSON results
-    json_filename = f"evaluation_results_from_recorded_turn{target_turn}.json" if target_turn else "evaluation_results_from_recorded.json"
-    pipeline.export_results_json(json_filename)
+    json_filename = reports_dir / (f"evaluation_results_from_recorded_turn{target_turn}.json" if target_turn else "evaluation_results_from_recorded.json")
+    pipeline.export_results_json(str(json_filename))
+    print(f"JSON results saved to: {json_filename}")
     
     return results
 
@@ -176,11 +187,16 @@ def run_openai_evaluation(target_turn: int = None):
     
     # Generate report
     print("\nGenerating report...")
-    report = pipeline.generate_report("evaluation_report.txt")
+    reports_dir = ensure_reports_dir()
+    report_path = reports_dir / "evaluation_report.txt"
+    report = pipeline.generate_report(str(report_path))
     print("\n" + report)
+    print(f"Report saved to: {report_path}")
     
     # Export JSON results
-    pipeline.export_results_json("evaluation_results.json")
+    json_path = reports_dir / "evaluation_results.json"
+    pipeline.export_results_json(str(json_path))
+    print(f"JSON results saved to: {json_path}")
     
     return results
 

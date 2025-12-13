@@ -4,3 +4,6 @@ venv/
 
 sample_context_vectors-*.json
 sample-chat-conversation-*.json
+
+# Reports directory (optional - uncomment if you want to ignore reports)
+reports/

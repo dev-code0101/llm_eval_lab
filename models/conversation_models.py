@@ -24,6 +24,12 @@ class Conversation:
     user_id: int
     conversation_turns: List[ConversationTurn]
 
+@dataclass
+class VectorInfo:
+    """Information about a vector's relevance score"""
+    score: float
+    vector_id: int
+    tokens_count: int
 
 @dataclass
 class VectorData:
@@ -34,15 +40,6 @@ class VectorData:
     tokens: Optional[int] = None
     created_at: Optional[str] = None
     source_type: Optional[int] = None  # Optional source type field
-
-
-@dataclass
-class VectorInfo:
-    """Information about a vector's relevance score"""
-    score: float
-    vector_id: int
-    tokens_count: int
-
 
 @dataclass
 class VectorSources:

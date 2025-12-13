@@ -7,13 +7,22 @@ import re
 from typing import Optional, List, Dict, Any
 
 from models import (
+    # Dataclass models
     Conversation,
     ConversationTurn,
     ContextVectorsResponse,
     ContextVectorsData,
     VectorData,
     VectorSources,
-    VectorInfo
+    VectorInfo,
+    # TypedDict schemas for raw JSON
+    ConversationTurnDict,
+    ConversationDict,
+    VectorInfoDict,
+    VectorSourcesDict,
+    VectorDataDict,
+    ContextVectorsDataDict,
+    ContextVectorsResponseDict,
 )
 
 
@@ -32,18 +41,19 @@ class JSONDataLoader:
         """
         with open(conversation_path, 'r', encoding='utf-8') as f:
             content = f.read()
-        data = self._parse_json_with_cleanup(content)
+        data: ConversationDict = self._parse_json_with_cleanup(content)  # type: ignore[assignment]
         
         # Convert to typed Conversation object
-        turns = []
+        turns: List[ConversationTurn] = []
         for turn_data in data.get("conversation_turns", []):
+            turn_dict: ConversationTurnDict = turn_data  # type: ignore[assignment]
             turn = ConversationTurn(
-                turn=turn_data.get("turn"),
-                sender_id=turn_data.get("sender_id"),
-                role=turn_data.get("role"),
-                message=turn_data.get("message", ""),
-                created_at=turn_data.get("created_at", ""),
-                evaluation_note=turn_data.get("evaluation_note")
+                turn=turn_dict.get("turn"),
+                sender_id=turn_dict.get("sender_id"),
+                role=turn_dict.get("role"),
+                message=turn_dict.get("message", ""),
+                created_at=turn_dict.get("created_at", ""),
+                evaluation_note=turn_dict.get("evaluation_note")
             )
             turns.append(turn)
         
@@ -65,11 +75,12 @@ class JSONDataLoader:
         """
         with open(vectors_path, 'r', encoding='utf-8') as f:
             content = f.read()
-        data = self._parse_json_with_cleanup(content)
+        data: ContextVectorsResponseDict = self._parse_json_with_cleanup(content)  # type: ignore[assignment]
         
         # Parse vector_data
-        vector_data_list = []
-        for vec_data in data.get("data", {}).get("vector_data", []):
+        vector_data_list: List[VectorData] = []
+        data_section: ContextVectorsDataDict = data.get("data", {})  # type: ignore[assignment]
+        for vec_data in data_section.get("vector_data", []):
             vector = VectorData(
                 id=vec_data.get("id"),
                 text=vec_data.get("text", ""),
@@ -81,8 +92,8 @@ class JSONDataLoader:
             vector_data_list.append(vector)
         
         # Parse sources
-        sources_data = data.get("data", {}).get("sources", {})
-        vectors_info_list = []
+        sources_data: VectorSourcesDict = data_section.get("sources", {})  # type: ignore[assignment]
+        vectors_info_list: List[VectorInfo] = []
         for vi_data in sources_data.get("vectors_info", []):
             vi = VectorInfo(
                 score=vi_data.get("score", 0.0),
@@ -112,7 +123,26 @@ class JSONDataLoader:
         )
     
     def _parse_json_with_cleanup(self, content: str) -> dict:
-        """Parse JSON with cleanup for common issues"""
+        """
+        Parse JSON with cleanup for common issues.
+        
+        This method performs the following cleanup operations:
+        - Removes // style comments
+        - Removes trailing commas before ] or }
+        - Handles control characters with strict=False fallback
+        
+        Args:
+            content: Raw JSON string content
+            
+        Returns:
+            Parsed dictionary. The actual structure depends on the JSON content:
+            - ConversationDict for conversation files
+            - ContextVectorsResponseDict for context vector files
+            
+        Note:
+            Type annotations in calling methods use TypedDict definitions
+            for better type safety with the returned dictionary structure.
+        """
         # Remove // comments (not inside strings)
         lines = []
         for line in content.split('\n'):
@@ -160,7 +190,7 @@ class JSONDataLoader:
                           for vi in sources.vectors_info}
             other_vectors = [v for v in all_vectors if v.id not in vectors_used]
             other_vectors.sort(key=lambda x: vectors_info.get(x.id, 0), reverse=True)
-            selected_vectors = used_vectors + other_vectors[:10]
+            selected_vectors = used_vectors + other_vectors[:5]
         else:
             selected_vectors = all_vectors[:15]
         

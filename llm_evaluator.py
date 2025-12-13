@@ -7,6 +7,7 @@ CLI interface for evaluating LLM responses.
 
 import sys
 import os
+from pathlib import Path
 
 # Add current directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -14,6 +15,13 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from core import EvaluationPipeline
 from evaluators import LLMEvaluator, MockLLMEvaluator
 from parsers import ConfigLoader
+
+
+def ensure_reports_dir() -> Path:
+    """Ensure the reports directory exists and return its path"""
+    reports_dir = Path(__file__).parent / "reports"
+    reports_dir.mkdir(exist_ok=True)
+    return reports_dir
 
 
 def main():
@@ -95,12 +103,25 @@ def main():
         )
         
         # Generate and display report
-        report = pipeline.generate_report(args.output)
-        print("\n" + report)
+        if args.output:
+            report_path = args.output
+        else:
+            reports_dir = ensure_reports_dir()
+            report_path = str(reports_dir / "evaluation_report.txt")
         
-        # Export JSON if requested
+        report = pipeline.generate_report(report_path)
+        print("\n" + report)
+        print(f"Report saved to: {report_path}")
+        
+        # Export JSON
         if args.json_output:
-            pipeline.export_results_json(args.json_output)
+            json_path = args.json_output
+        else:
+            reports_dir = ensure_reports_dir()
+            json_path = str(reports_dir / "evaluation_results.json")
+        
+        pipeline.export_results_json(json_path)
+        print(f"JSON results saved to: {json_path}")
             
     except FileNotFoundError as e:
         print(f"Error: File not found - {e}")
