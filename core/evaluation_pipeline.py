@@ -5,9 +5,10 @@ Pipeline orchestration for evaluating chat conversations.
 from typing import Optional
 
 from models import EvaluationResult
-from evaluators import LLMEvaluator
+from evaluators import LLMEvaluator, UnifiedEvaluator
 from loaders import JSONDataLoader
 from generators import TextReportGenerator, JSONReportGenerator
+from parsers import ConfigLoader, EvaluationConfig
 
 
 class EvaluationPipeline:
@@ -18,15 +19,27 @@ class EvaluationPipeline:
     def __init__(
         self,
         evaluator: LLMEvaluator,
+        config: Optional[EvaluationConfig] = None,
         data_loader: Optional[JSONDataLoader] = None,
         text_report_generator: Optional[TextReportGenerator] = None,
         json_report_generator: Optional[JSONReportGenerator] = None
     ):
-        self.evaluator = evaluator
+        self.config = config or ConfigLoader.load()
+        # Wrap evaluator in UnifiedEvaluator to handle config-based metric selection
+        self.evaluator = UnifiedEvaluator(
+            llm_evaluator=evaluator,
+            config=self.config.metrics
+        )
         self.data_loader = data_loader or JSONDataLoader()
         self.text_report_generator = text_report_generator or TextReportGenerator()
         self.json_report_generator = json_report_generator or JSONReportGenerator()
         self.results: list[EvaluationResult] = []
+        
+        # Pass config to report generators
+        if hasattr(self.text_report_generator, 'set_config'):
+            self.text_report_generator.set_config(self.config)
+        if hasattr(self.json_report_generator, 'set_config'):
+            self.json_report_generator.set_config(self.config)
     
     def evaluate_conversation(
         self,
@@ -53,6 +66,12 @@ class EvaluationPipeline:
         if target_turn:
             ai_responses = [r for r in ai_responses if r["turn_id"] == target_turn]
         
+        if not ai_responses:
+            print(f"No AI responses found to evaluate.")
+            if target_turn:
+                print(f"Turn {target_turn} may not exist or may not be an AI response.")
+            return []
+        
         self.results = []
         
         for response_data in ai_responses:
@@ -67,6 +86,11 @@ class EvaluationPipeline:
                 ai_response=response_data["ai_response"],
                 context_vectors=context_vectors
             )
+            
+            # Add evaluation note from conversation if present
+            if response_data.get("evaluation_note"):
+                result.evaluation_note = response_data["evaluation_note"]
+                result.evaluation_summary += f"\n📝 Note from conversation: {response_data['evaluation_note']}"
             
             self.results.append(result)
             print(f"Evaluated turn {response_data['turn_id']}: {result.overall_score:.1f}/5.0")

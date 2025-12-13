@@ -13,6 +13,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from core import EvaluationPipeline
 from evaluators import LLMEvaluator, MockLLMEvaluator
+from parsers import ConfigLoader
 
 
 def main():
@@ -37,7 +38,7 @@ def main():
     )
     parser.add_argument(
         "--provider", "-p",
-        choices=["openai", "anthropic", "mock"],
+        choices=["openai", "anthropic", "huggingface", "mock"],
         default="openai",
         help="LLM provider (default: openai)"
     )
@@ -59,17 +60,32 @@ def main():
         action="store_true",
         help="Use mock evaluator (no API calls)"
     )
+    parser.add_argument(
+        "--config", "-c",
+        help="Path to config YAML file (default: config.yaml)"
+    )
     
     args = parser.parse_args()
+    
+    # Load configuration
+    config = ConfigLoader.load(args.config)
+    
+    # Override config with CLI arguments if provided
+    if args.provider != "openai" or args.model != "gpt-4o-mini":
+        config.llm_provider.provider = args.provider
+        config.llm_provider.model = args.model
     
     # Initialize evaluator
     if args.mock:
         evaluator = MockLLMEvaluator()
     else:
-        evaluator = LLMEvaluator(provider=args.provider, model=args.model)
+        evaluator = LLMEvaluator(
+            provider=config.llm_provider.provider,
+            model=config.llm_provider.model
+        )
     
-    # Run pipeline
-    pipeline = EvaluationPipeline(evaluator)
+    # Run pipeline with config
+    pipeline = EvaluationPipeline(evaluator, config=config)
     
     try:
         pipeline.evaluate_conversation(

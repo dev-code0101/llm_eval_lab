@@ -1,4 +1,8 @@
 # LLM Evaluation Pipeline Dependencies
 openai>=1.0.0
 anthropic>=0.18.0  # Optional: for Anthropic Claude support
+pyyaml>=6.0  # For YAML config file support
+rouge-score>=0.1.2  # For ROUGE metric evaluation
+lettucedetect>=0.1.0  # Optional: for LettuceDetect hallucination detection
+python-dotenv>=1.0.0  # For loading environment variables from .env file
 

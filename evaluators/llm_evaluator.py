@@ -8,7 +8,7 @@ from typing import Optional
 
 from models import RelevanceResult, HallucinationResult, EvaluationResult
 from prompts import RELEVANCE_EVALUATION_PROMPT, HALLUCINATION_EVALUATION_PROMPT
-from clients import LLMClient, OpenAIClient, AnthropicClient
+from clients import LLMClient, OpenAIClient, AnthropicClient, HuggingFaceClient
 
 
 class LLMEvaluator:
@@ -18,25 +18,28 @@ class LLMEvaluator:
     Supports multiple LLM backends:
     - OpenAI (default)
     - Anthropic Claude
+    - Hugging Face (OpenAI-compatible API)
     """
     
     def __init__(
         self,
         provider: str = "openai",
         model: str = "gpt-4o-mini",
-        api_key: Optional[str] = None
+        base_url: Optional[str] = None
     ):
         self.provider = provider
         self.model = model
-        self.api_key = api_key
+        self.base_url = base_url
         
-        # Initialize appropriate client
+        # Initialize appropriate client (clients will auto-resolve API keys from env vars)
         if provider == "openai":
-            self.client: LLMClient = OpenAIClient(model=model, api_key=api_key)
+            self.client: LLMClient = OpenAIClient(model=model)
         elif provider == "anthropic":
-            self.client: LLMClient = AnthropicClient(model=model, api_key=api_key)
+            self.client: LLMClient = AnthropicClient(model=model)
+        elif provider == "huggingface":
+            self.client: LLMClient = HuggingFaceClient(model=model, base_url=base_url)
         else:
-            raise ValueError(f"Unknown provider: {provider}")
+            raise ValueError(f"Unknown provider: {provider}. Supported: openai, anthropic, huggingface")
     
     def _parse_json_response(self, response: str) -> dict:
         """Safely parse JSON from LLM response"""

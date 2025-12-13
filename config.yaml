@@ -1,0 +1,49 @@
+# LLM Evaluation Pipeline Configuration
+# Enable/disable evaluation metrics
+
+metrics:
+  # Response Relevance - Checks if the response addresses the user's question
+  response_relevance:
+    enabled: true
+    method: "llm_judge"  # "llm_judge" (uses LLM-as-judge)
+    weight: 0.3  # Weight for overall score calculation
+  
+  # Response Completeness - Checks if the response fully answers the question
+  response_completeness:
+    enabled: true
+    method: "llm_judge"  # "llm_judge" (uses LLM-as-judge)
+    weight: 0.3  # Weight for overall score calculation
+  
+  # Hallucination / Factual Accuracy - Verifies claims against context
+  hallucination:
+    enabled: true
+    method: "lettucedetect"  # "llm_judge", "lettucedetect"
+    weight: 0.3  # Weight for overall score calculation
+    # LettuceDetect-specific settings (only used when method="lettucedetect")
+    lettucedetect_model: "KRLabsOrg/lettucedect-base-modernbert-en-v1"
+  
+  # ROUGE Metrics - N-gram overlap metrics (ROUGE-1, ROUGE-2, ROUGE-L)
+  rouge:
+    enabled: true
+    method: "rouge"  # "rouge" (ROUGE n-gram) or "llm_judge" (LLM-based evaluation)
+    weight: 0.1  # Weight for overall score calculation
+    rouge_types:  # Which ROUGE metrics to compute (only for rouge method)
+      - rouge-1
+      - rouge-2
+      - rouge-l
+
+# LLM Provider Settings (for LLM-as-judge evaluations)
+llm_provider:
+  provider: "huggingface"  # openai, anthropic, huggingface, mock
+  model: "meta-llama/Llama-3.1-8B-Instruct"  # For huggingface: e.g., "meta-llama/Llama-3.1-8B-Instruct:novita"
+  api_key: null  # Set via environment variable or override here
+  # For Hugging Face: set HF_TOKEN environment variable
+  # For OpenAI: set OPENAI_API_KEY environment variable
+  # For Anthropic: set ANTHROPIC_API_KEY environment variable
+
+# Report Settings
+report:
+  include_detailed_explanations: true
+  include_context_sources: true
+  output_format: "both"  # text, json, both
+
