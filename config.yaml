@@ -4,13 +4,13 @@
 metrics:
   # Response Relevance - Checks if the response addresses the user's question
   response_relevance:
-    enabled: false
+    enabled: true
     method: "llm_judge"  # "llm_judge" (uses LLM-as-judge)
     weight: 0.3  # Weight for overall score calculation
   
   # Response Completeness - Checks if the response fully answers the question
   response_completeness:
-    enabled: false
+    enabled: true
     method: "llm_judge"  # "llm_judge" (uses LLM-as-judge)
     weight: 0.3  # Weight for overall score calculation
   

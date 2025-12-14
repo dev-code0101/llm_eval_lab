@@ -7,7 +7,7 @@ by identifying which parts of the answer are not supported by the context.
 
 from typing import Optional, List
 from models import HallucinationResult
-
+import string
 
 class LettuceDetectEvaluator:
     """
@@ -113,7 +113,11 @@ class LettuceDetectEvaluator:
                     start = pred.get('start', 0)
                     end = pred.get('end', len(ai_response))
                     confidence = pred.get('confidence', 0.0)
-                    text = pred.get('text', ai_response[start:end])
+                    text : str = pred.get('text', ai_response[start:end])
+                    
+                    if len(text.strip().replace(string.punctuation, "")) < 5 or \
+                       confidence < 0.8:
+                        continue
                     
                     hallucinated_spans.append({
                         'claim': text.strip(),
